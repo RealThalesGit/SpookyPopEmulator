@@ -16,27 +16,69 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: recursive
+
+    # ─────────────────────────────
+    # Java (obrigatório p/ javac + d8)
+    # ─────────────────────────────
+    - name: Setup JDK 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: 17
+
+    # ─────────────────────────────
+    # Android SDK FULL (correto)
+    # ─────────────────────────────
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
-    - name: Setup Android NDK
+
+    - name: Install Android packages
+      run: |
+        sdkmanager "platform-tools" \
+                   "platforms;android-34" \
+                   "build-tools;34.0.0"
+
+    # ─────────────────────────────
+    # NDK
+    # ─────────────────────────────
+    - name: Setup NDK
       uses: nttld/setup-ndk@v1
       with:
         ndk-version: r25c
+
+    - name: Export NDK path
+      run: echo "ANDROID_NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> $GITHUB_ENV
+
+    # ─────────────────────────────
+    # Linux deps
+    # ─────────────────────────────
     - name: Install dependencies
       run: |
         sudo apt update
-        sudo apt install -y zip unzip openjdk-17-jdk curl wget
+        sudo apt install -y zip unzip curl wget
+
+    # ─────────────────────────────
+    # Debug env (opcional mas útil)
+    # ─────────────────────────────
     - name: Show environment
       run: |
         java -version
         echo "ANDROID_HOME=$ANDROID_HOME"
         echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-        ls $ANDROID_HOME || true
+        ls $ANDROID_SDK_ROOT || true
+
+    # ─────────────────────────────
+    # Build
+    # ─────────────────────────────
     - name: Build Android APK
       run: |
         chmod +x ./scripts/build_android_apk.sh
         ./scripts/build_android_apk.sh
-    - name: Upload compiled APK
+
+    # ─────────────────────────────
+    # Artifact
+    # ─────────────────────────────
+    - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: android-apk
